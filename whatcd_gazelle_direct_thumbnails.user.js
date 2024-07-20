@@ -18,65 +18,89 @@
 // @include     /https?://pornbay\.org/user\.php.*/
 // @include     /https?://pornbay\.org/top10\.php.*/
 // @include     /https?://pornbay\.org/collages\.php\?id.*/
-// @version     12
+// @version     12.1
 // @require     http://code.jquery.com/jquery-2.1.1.js
 // @grant       GM_addStyle
 // ==/UserScript==
 
-// Changelog:
-// * version 12
-// - added support for pornbay
-// - added support for collages
-// * version 11
-// - added workaround for empornium broken layout
-// - added support for cheggit.me
-// * version 10
-// - fixed trimmed category icons on femdomcult
-// - added support for top10 on femdomcult
-// - excluded torrent details page
-// * version 9
-// - added support for notifications page
-// * version 8
-// - fixed undefined variable
-// * version 7
-// - added support for top10
-// - added option full_thumbnails to restore full sized images
-// - added option remove_categories, previously it was always set
-// * version 6
-// - added option small_thumbnails to save bandwidth and decrease imagehosts load
-// * version 5
-// - added support for femdomcult.org
-// * version 4
-// - fixed broken option replace_categories
-// * version 2
-// - improved reliability
-// - fixed missing scroll events
-// - added option to replace categories
+/*
+Changelog:
+* version 12.1
+- added configurable Maximum Image Size parameter (max_image_size)
+- main function moved to the top of the code for easier configuration
+- minor formatting
+* version 12
+- added support for pornbay
+- added support for collages
+* version 11
+- added workaround for empornium broken layout
+- added support for cheggit.me
+* version 10
+- fixed trimmed category icons on femdomcult
+- added support for top10 on femdomcult
+- excluded torrent details page
+* version 9
+- added support for notifications page
+* version 8
+- fixed undefined variable
+* version 7
+- added support for top10
+- added option full_thumbnails to restore full sized images
+- added option remove_categories, previously it was always set
+* version 6
+- added option small_thumbnails to save bandwidth and decrease imagehosts load
+* version 5
+- added support for femdomcult.org
+* version 4
+- fixed broken option replace_categories
+* version 2
+- improved reliability
+- fixed missing scroll events
+- added option to replace categories
+*/
 
 "use strict";
 
+(function () {
+    var max_image_size = 150;
+    var replace_categories = true;
+    var remove_categories = false;
+    var small_thumbnails = true;
+
+    var backend = create_backend(replace_categories);
+    new LazyThumbnails(
+        new ProgressBar(),
+        backend,
+        small_thumbnails,
+        false,
+        replace_categories,
+        remove_categories,
+        max_image_size
+    );
+})();
+
 GM_addStyle('' +
-'.small-category {' +
-// '    text-align: left !important;' +
-'    vertical-align: top !important;' +
-'}' +
-'.overlay-category td > div[title],' +
-'.overlay-category .cats_col  > div,' +
-'.overlay-category .cats_cols > div {' +
-'    position: absolute;' +
-'    overflow: hidden;' +
-'}' +
-'.overlay-category-small td > div[title],' +
-'.overlay-category-small .cats_col  > div,' +
-'.overlay-category-small .cats_cols > div {' +
-'    width: 11px;' +
-'}' +
-'.remove-category td > div[title],' +
-'.remove-category .cats_col  > div,' +
-'.remove-category .cats_cols > div {' +
-'    display: none;' +
-'}' +
-'');
+    '.small-category {' +
+    // '    text-align: left !important;' +
+    '    vertical-align: top !important;' +
+    '}' +
+    '.overlay-category td > div[title],' +
+    '.overlay-category .cats_col  > div,' +
+    '.overlay-category .cats_cols > div {' +
+    '    position: absolute;' +
+    '    overflow: hidden;' +
+    '}' +
+    '.overlay-category-small td > div[title],' +
+    '.overlay-category-small .cats_col  > div,' +
+    '.overlay-category-small .cats_cols > div {' +
+    '    width: 11px;' +
+    '}' +
+    '.remove-category td > div[title],' +
+    '.remove-category .cats_col  > div,' +
+    '.remove-category .cats_cols > div {' +
+    '    display: none;' +
+    '}' +
+    '');
 
 this.$ = this.jQuery = jQuery.noConflict(true);
 
@@ -88,7 +112,7 @@ function ProgressBar() {
     this.visibility_change_duration = 1; // in seconds
     this.bar_value_change_duration = 0.15; // in seconds
 
-    this.init = function() {
+    this.init = function () {
         self.handle.css({
             'background': 'none',
             'width': '100%',
@@ -118,23 +142,23 @@ function ProgressBar() {
         });
     };
 
-    this.set_bar_value_change_duration = function(value) {
+    this.set_bar_value_change_duration = function (value) {
         self.bar_value_change_duration = value;
-        self.bar.css({'transition': 'width ' + value + 's linear'});
+        self.bar.css({ 'transition': 'width ' + value + 's linear' });
     };
 
-    this.set_value = function(value) {
-        self.bar.css({'width': value * 100 + '%'});
+    this.set_value = function (value) {
+        self.bar.css({ 'width': value * 100 + '%' });
     };
 
-    this.show = function() {
+    this.show = function () {
         self.handle.css({
             'visibility': 'visible',
             'opacity': '1.0'
         });
     };
 
-    this.hide = function() {
+    this.hide = function () {
         self.handle.css({
             'visibility': 'hidden',
             'opacity': '0.0'
@@ -216,7 +240,7 @@ function ImagesFromHover(replace_categories) {
     };
 }
 
-function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, replace_categories, remove_categories) {
+function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, replace_categories, remove_categories, max_image_size) {
     var self = this;
 
     this.$torrent_table = null;
@@ -234,15 +258,15 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
         },
     ];
 
-    this.create_img = function(src, small) {
+    this.create_img = function (src, small) {
         var $img = jQuery('<img>');
-        var min_size = small ? '200px' : '300px';
+        var min_size = small ? '50px' : max_image_size + 'px';
         $img.data('src', src);
         $img.css({
             'min-width': min_size,
             'min-height': min_size,
-            'max-width': '300px',
-            'max-height': '300px',
+            'max-width': max_image_size + 'px',
+            'max-height': max_image_size + 'px',
         });
         return $img;
     };
@@ -274,7 +298,7 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
     }
 
     this.attach_thumbnails = function () {
-        self.$torrent_table.find('tr.torrent').each(function() {
+        self.$torrent_table.find('tr.torrent').each(function () {
             var $row = jQuery(this);
 
             var src = self.get_image_src($row);
@@ -301,18 +325,18 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
         });
     };
 
-    this.visible_area = function() {
+    this.visible_area = function () {
         var $window = jQuery(window);
         var y = $window.scrollTop();
         var height = $window.height();
         return [y, height];
     };
 
-    this.on_scroll_event = function() {
+    this.on_scroll_event = function () {
         self.load_next_image();
     };
 
-    this.load_next_image = function(force_check) {
+    this.load_next_image = function (force_check) {
         // console.log('load next image', self.image_index, '/', self.images.length);
         if (self.image_index < self.images.length) {
             var $img = self.images[self.image_index];
@@ -335,18 +359,18 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
         }
     };
 
-    this.progress_set_value = function(value) {
+    this.progress_set_value = function (value) {
         progress && progress.set_value(value);
     };
 
-    this.progress_hide = function() {
+    this.progress_hide = function () {
         progress && progress.hide();
     };
 
-    this.attach_scroll_event = function() {
+    this.attach_scroll_event = function () {
         jQuery(document).on('scroll resize', self.on_scroll_event);
     };
-    this.detach_scroll_event = function() {
+    this.detach_scroll_event = function () {
         jQuery(document).off('scroll resize', self.on_scroll_event);
         self.progress_hide();
     };
@@ -362,7 +386,7 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
         self.$torrent_table.addClass('remove-category');
     };
 
-    this.init = function() {
+    this.init = function () {
         self.$torrent_table = jQuery('.torrent_table');
         if (replace_categories)
             self.replace_categories();
@@ -380,19 +404,3 @@ function LazyThumbnails(progress, backend, small_thumbnails, full_thumbnails, re
 function create_backend(replace_categories) {
     return new ImagesFromHover(replace_categories);
 }
-
-(function() {
-    var replace_categories = true;
-    var remove_categories = false;
-    var small_thumbnails = false;
-
-    var backend = create_backend(replace_categories);
-    new LazyThumbnails(
-        new ProgressBar(),
-        backend,
-        small_thumbnails,
-        false,
-        replace_categories,
-        remove_categories
-    );
-})();
