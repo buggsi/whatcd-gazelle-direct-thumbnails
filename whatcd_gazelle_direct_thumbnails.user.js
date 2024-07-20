@@ -19,6 +19,7 @@
 // @include     /https?://pornbay\.org/top10\.php.*/
 // @include     /https?://pornbay\.org/collages\.php\?id.*/
 // @version     12.1
+// @license     MIT
 // @require     http://code.jquery.com/jquery-2.1.1.js
 // @grant       GM_addStyle
 // ==/UserScript==
