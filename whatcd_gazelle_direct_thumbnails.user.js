@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name        whatcd gazelle direct thumbnails
-// @include     /https?://www\.empornium\.(me|sx)/torrents\.php.*/
-// @exclude     /https?://www\.empornium\.(me|sx)/torrents\.php\?id.*/
-// @include     /https?://www\.empornium\.(me|sx)/user\.php.*/
-// @include     /https?://www\.empornium\.(me|sx)/top10\.php.*/
-// @include     /https?://www\.empornium\.(me|sx)/collages\.php\?id.*/
+// @include     /https?://www\.empornium\.(is|sx)/torrents\.php.*/
+// @exclude     /https?://www\.empornium\.(is|sx)/torrents\.php\?id.*/
+// @include     /https?://www\.empornium\.(is|sx)/user\.php.*/
+// @include     /https?://www\.empornium\.(is|sx)/top10\.php.*/
+// @include     /https?://www\.empornium\.(is|sx)/collages\.php\?id.*/
 // @include     /https?://femdomcult\.org/torrents\.php.*/
 // @exclude     /https?://femdomcult\.org/torrents\.php\?id.*/
 // @include     /https?://femdomcult\.org/user\.php.*/
@@ -18,7 +18,7 @@
 // @include     /https?://pornbay\.org/user\.php.*/
 // @include     /https?://pornbay\.org/top10\.php.*/
 // @include     /https?://pornbay\.org/collages\.php\?id.*/
-// @version     12.1
+// @version     12.2
 // @license     MIT
 // @require     http://code.jquery.com/jquery-2.1.1.js
 // @grant       GM_addStyle
@@ -26,6 +26,8 @@
 
 /*
 Changelog:
+* version 12.2
+- update empornium domains
 * version 12.1
 - added configurable Maximum Image Size parameter (max_image_size)
 - main function moved to the top of the code for easier configuration
